@@ -18,4 +18,3 @@ keywords = ["arm", "sp806", "watchdog", "timer", "driver"]
 
 [dependencies]
 bitflags = "2.6"
-volatile-register = "0.2"
