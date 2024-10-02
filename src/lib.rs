@@ -80,6 +80,7 @@ where
     const UNLOCK: u32 = 0x1ACCE551;
 
     pub fn new(regs: &'a mut R) -> Self {
+        // SAFETY: regs can be dereferenced as a valid SP805 register block
         unsafe {
             addr_of_mut!(regs.wdog_lock).write_volatile(Self::UNLOCK);
         }
@@ -112,6 +113,7 @@ where
     R: DerefMut<Target = SP805Registers>,
 {
     fn drop(&mut self) {
+        // SAFETY: self.regs can be dereferenced as a valid SP805 register block
         unsafe {
             addr_of_mut!(self.regs.wdog_lock).write_volatile(Self::LOCK);
         }
@@ -141,6 +143,7 @@ where
         let load_value = self.load_value;
         let mut regs = self.unlock();
 
+        // SAFETY: self.regs can be dereferenced as a valid SP805 register block
         unsafe {
             addr_of_mut!(regs.wdog_load).write_volatile(load_value);
             addr_of_mut!(regs.wdog_intclr).write_volatile(1);
@@ -151,6 +154,7 @@ where
 
     /// Disable watchdog
     pub fn disable(&mut self) {
+        // SAFETY: self.regs can be dereferenced as a valid SP805 register block
         unsafe {
             addr_of_mut!(self.unlock().wdog_control)
                 .write_volatile(ControlRegister::empty().bits());
@@ -161,6 +165,7 @@ where
     pub fn update(&mut self) {
         let load_value = self.load_value;
 
+        // SAFETY: self.regs can be dereferenced as a valid SP805 register block
         unsafe {
             addr_of_mut!(self.unlock().wdog_load).write_volatile(load_value);
         }
