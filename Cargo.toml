@@ -12,7 +12,8 @@ description = "Arm Watchdog Module (SP805) driver"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://git.trustedfirmware.org/rust-spmc/rust-spmc.git"
-keywords = ["arm", "sp806", "watchdog", "timer", "driver"]
+keywords = ["arm", "sp805", "watchdog", "timer", "driver"]
+rust-version = "1.82"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

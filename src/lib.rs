@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2023-2024 Arm Limited and/or its affiliates <open-source-office@arm.com>
+// SPDX-FileCopyrightText: Copyright 2023-2025 Arm Limited and/or its affiliates <open-source-office@arm.com>
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 //! Arm Watchdog Module (SP805) driver
@@ -7,10 +7,7 @@
 
 #![no_std]
 
-use core::{
-    ops::{Deref, DerefMut},
-    ptr::addr_of_mut,
-};
+use core::ops::{Deref, DerefMut};
 
 use bitflags::bitflags;
 
@@ -82,13 +79,13 @@ where
     pub fn new(regs: &'a mut R) -> Self {
         // SAFETY: regs can be dereferenced as a valid SP805 register block
         unsafe {
-            addr_of_mut!(regs.wdog_lock).write_volatile(Self::UNLOCK);
+            (&raw mut regs.wdog_lock).write_volatile(Self::UNLOCK);
         }
         Self { regs }
     }
 }
 
-impl<'a, R> Deref for WatchdogUnlockGuard<'a, R>
+impl<R> Deref for WatchdogUnlockGuard<'_, R>
 where
     R: DerefMut<Target = SP805Registers>,
 {
@@ -99,7 +96,7 @@ where
     }
 }
 
-impl<'a, R> DerefMut for WatchdogUnlockGuard<'a, R>
+impl<R> DerefMut for WatchdogUnlockGuard<'_, R>
 where
     R: DerefMut<Target = SP805Registers>,
 {
@@ -108,14 +105,14 @@ where
     }
 }
 
-impl<'a, R> Drop for WatchdogUnlockGuard<'a, R>
+impl<R> Drop for WatchdogUnlockGuard<'_, R>
 where
     R: DerefMut<Target = SP805Registers>,
 {
     fn drop(&mut self) {
         // SAFETY: self.regs can be dereferenced as a valid SP805 register block
         unsafe {
-            addr_of_mut!(self.regs.wdog_lock).write_volatile(Self::LOCK);
+            (&raw mut self.regs.wdog_lock).write_volatile(Self::LOCK);
         }
     }
 }
@@ -145,9 +142,9 @@ where
 
         // SAFETY: self.regs can be dereferenced as a valid SP805 register block
         unsafe {
-            addr_of_mut!(regs.wdog_load).write_volatile(load_value);
-            addr_of_mut!(regs.wdog_intclr).write_volatile(1);
-            addr_of_mut!(regs.wdog_control)
+            (&raw mut regs.wdog_load).write_volatile(load_value);
+            (&raw mut regs.wdog_intclr).write_volatile(1);
+            (&raw mut regs.wdog_control)
                 .write_volatile((ControlRegister::INTEN | ControlRegister::RESEN).bits());
         }
     }
@@ -156,8 +153,7 @@ where
     pub fn disable(&mut self) {
         // SAFETY: self.regs can be dereferenced as a valid SP805 register block
         unsafe {
-            addr_of_mut!(self.unlock().wdog_control)
-                .write_volatile(ControlRegister::empty().bits());
+            (&raw mut self.unlock().wdog_control).write_volatile(ControlRegister::empty().bits());
         }
     }
 
@@ -167,7 +163,7 @@ where
 
         // SAFETY: self.regs can be dereferenced as a valid SP805 register block
         unsafe {
-            addr_of_mut!(self.unlock().wdog_load).write_volatile(load_value);
+            (&raw mut self.unlock().wdog_load).write_volatile(load_value);
         }
     }
 
