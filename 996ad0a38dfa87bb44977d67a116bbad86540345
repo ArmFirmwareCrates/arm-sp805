@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "40d89abc_e485cb32",
+        "filename": "Cargo.toml",
+        "patchSetId": 1
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1000160
+      },
+      "writtenOn": "2025-01-10T17:08:25Z",
+      "side": 1,
+      "message": "Please fix this typo too :D",
+      "range": {
+        "startLine": 15,
+        "startChar": 20,
+        "endLine": 15,
+        "endChar": 25
+      },
+      "revId": "996ad0a38dfa87bb44977d67a116bbad86540345",
+      "serverId": "8f6f209b-db1a-4cbf-aa44-c8bc30e9bfda"
+    }
+  ]
+}
