@@ -1,0 +1,7 @@
+Code-Review+2: Bálint Dobszay <balint.dobszay@arm.com>
+Submitted-by: Bálint Dobszay <balint.dobszay@arm.com>
+Submitted-at: Mon, 13 Jan 2025 13:24:05 +0100
+Reviewed-on: https://review.trustedfirmware.org/c/rust-spmc/arm-sp805/+/34477
+Comments-Total: 2
+Project: rust-spmc/arm-sp805
+Branch: refs/heads/main
