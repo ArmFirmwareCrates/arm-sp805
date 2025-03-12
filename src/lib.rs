@@ -7,9 +7,12 @@
 
 #![no_std]
 
-use core::ops::{Deref, DerefMut};
-
 use bitflags::bitflags;
+use safe_mmio::{
+    field,
+    fields::{ReadPure, ReadPureWrite, WriteOnly},
+    UniqueMmioPointer,
+};
 
 bitflags! {
     /// Control register
@@ -40,134 +43,95 @@ bitflags! {
 /// SP805 register map
 #[repr(C, align(4))]
 pub struct SP805Registers {
-    wdog_load: u32,           // 0x000 Load Register
-    wdog_value: u32,          // 0x004 Value Register
-    wdog_control: u32,        // 0x008 Control register
-    wdog_intclr: u32,         // 0x00c Interrupt Clear Register
-    wdog_ris: u32,            // 0x010 Raw Interrupt Status Register
-    wdog_mis: u32,            // 0x014 Masked Interrupt Status Register
-    reserved_18: [u32; 762],  // 0x018 - 0xbfc
-    wdog_lock: u32,           // 0xc00 Lock Register
-    reserved_c04: [u32; 191], // 0xc04 - 0xefc
-    wdog_itcr: u32,           // 0xf00 Integration Test Control Register,
-    wdog_itop: u32,           // 0xf04 Integration Test Output Set
-    reserved_f08: [u32; 54],  // 0xf08 - 0xfdc
-    wdog_periph_id0: u32,     // 0xfe0 Peripheral Identification Register 0
-    wdog_periph_id1: u32,     // 0xfe4 Peripheral Identification Register 1
-    wdog_periph_id2: u32,     // 0xfe8 Peripheral Identification Register 2
-    wdog_periph_id3: u32,     // 0xfec Peripheral Identification Register 3
-    wdog_pcell_id0: u32,      // 0xff0 PrimeCell Identification Register 0
-    wdog_pcell_id1: u32,      // 0xff4 PrimeCell Identification Register 1
-    wdog_pcell_id2: u32,      // 0xff8 PrimeCell Identification Register 2
-    wdog_pcell_id3: u32,      // 0xffc PrimeCell Identification Register 3
-}
-
-struct WatchdogUnlockGuard<'a, R>
-where
-    R: DerefMut<Target = SP805Registers>,
-{
-    regs: &'a mut R,
-}
-
-impl<'a, R> WatchdogUnlockGuard<'a, R>
-where
-    R: DerefMut<Target = SP805Registers>,
-{
-    const LOCK: u32 = 0x00000001;
-    const UNLOCK: u32 = 0x1ACCE551;
-
-    pub fn new(regs: &'a mut R) -> Self {
-        // SAFETY: regs can be dereferenced as a valid SP805 register block
-        unsafe {
-            (&raw mut regs.wdog_lock).write_volatile(Self::UNLOCK);
-        }
-        Self { regs }
-    }
-}
-
-impl<R> Deref for WatchdogUnlockGuard<'_, R>
-where
-    R: DerefMut<Target = SP805Registers>,
-{
-    type Target = R;
-
-    fn deref(&self) -> &Self::Target {
-        self.regs
-    }
-}
-
-impl<R> DerefMut for WatchdogUnlockGuard<'_, R>
-where
-    R: DerefMut<Target = SP805Registers>,
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.regs
-    }
-}
-
-impl<R> Drop for WatchdogUnlockGuard<'_, R>
-where
-    R: DerefMut<Target = SP805Registers>,
-{
-    fn drop(&mut self) {
-        // SAFETY: self.regs can be dereferenced as a valid SP805 register block
-        unsafe {
-            (&raw mut self.regs.wdog_lock).write_volatile(Self::LOCK);
-        }
-    }
+    /// 0x000 Load Register
+    wdog_load: ReadPureWrite<u32>,
+    /// 0x004 Value Register
+    wdog_value: ReadPure<u32>,
+    /// 0x008 Control register
+    wdog_control: ReadPureWrite<u32>,
+    /// 0x00c Interrupt Clear Register
+    wdog_intclr: WriteOnly<u32>,
+    /// 0x010 Raw Interrupt Status Register
+    wdog_ris: ReadPure<u32>,
+    /// 0x014 Masked Interrupt Status Register
+    wdog_mis: ReadPure<u32>,
+    /// 0x018 - 0xbfc
+    reserved_18: [u32; 762],
+    /// 0xc00 Lock Register
+    wdog_lock: ReadPureWrite<u32>,
+    /// 0xc04 - 0xefc
+    reserved_c04: [u32; 191],
+    /// 0xf00 Integration Test Control Register,
+    wdog_itcr: ReadPureWrite<u32>,
+    /// 0xf04 Integration Test Output Set
+    wdog_itop: WriteOnly<u32>,
+    /// 0xf08 - 0xfdc
+    reserved_f08: [u32; 54],
+    /// 0xfe0 Peripheral Identification Register 0
+    wdog_periph_id0: ReadPure<u32>,
+    /// 0xfe4 Peripheral Identification Register 1
+    wdog_periph_id1: ReadPure<u32>,
+    /// 0xfe8 Peripheral Identification Register 2
+    wdog_periph_id2: ReadPure<u32>,
+    /// 0xfec Peripheral Identification Register 3
+    wdog_periph_id3: ReadPure<u32>,
+    /// 0xff0 PrimeCell Identification Register 0
+    wdog_pcell_id0: ReadPure<u32>,
+    /// 0xff4 PrimeCell Identification Register 1
+    wdog_pcell_id1: ReadPure<u32>,
+    /// 0xff8 PrimeCell Identification Register 2
+    wdog_pcell_id2: ReadPure<u32>,
+    /// 0xffc PrimeCell Identification Register 3
+    wdog_pcell_id3: ReadPure<u32>,
 }
 
 /// SP805 Watchdog implementation
-pub struct Watchdog<R>
-where
-    R: Deref<Target = SP805Registers>,
-{
-    regs: R,
+pub struct Watchdog<'a> {
+    regs: UniqueMmioPointer<'a, SP805Registers>,
     load_value: u32,
 }
 
-impl<R> Watchdog<R>
-where
-    R: DerefMut<Target = SP805Registers>,
-{
+impl<'a> Watchdog<'a> {
+    const LOCK: u32 = 0x00000001;
+    const UNLOCK: u32 = 0x1ACCE551;
+
     /// Create new watchdog instance
-    pub fn new(regs: R, load_value: u32) -> Self {
+    pub fn new(regs: UniqueMmioPointer<'a, SP805Registers>, load_value: u32) -> Self {
         Self { regs, load_value }
     }
 
     /// Enable watchdog
     pub fn enable(&mut self) {
         let load_value = self.load_value;
-        let mut regs = self.unlock();
 
-        // SAFETY: self.regs can be dereferenced as a valid SP805 register block
-        unsafe {
-            (&raw mut regs.wdog_load).write_volatile(load_value);
-            (&raw mut regs.wdog_intclr).write_volatile(1);
-            (&raw mut regs.wdog_control)
-                .write_volatile((ControlRegister::INTEN | ControlRegister::RESEN).bits());
-        }
+        self.with_unlock(|mut regs| {
+            field!(regs, wdog_load).write(load_value);
+            field!(regs, wdog_intclr).write(1);
+            field!(regs, wdog_control)
+                .write((ControlRegister::INTEN | ControlRegister::RESEN).bits());
+        });
     }
 
     /// Disable watchdog
     pub fn disable(&mut self) {
-        // SAFETY: self.regs can be dereferenced as a valid SP805 register block
-        unsafe {
-            (&raw mut self.unlock().wdog_control).write_volatile(ControlRegister::empty().bits());
-        }
+        self.with_unlock(|mut regs| {
+            field!(regs, wdog_control).write(ControlRegister::empty().bits())
+        });
     }
 
     /// Update watchdog
     pub fn update(&mut self) {
         let load_value = self.load_value;
 
-        // SAFETY: self.regs can be dereferenced as a valid SP805 register block
-        unsafe {
-            (&raw mut self.unlock().wdog_load).write_volatile(load_value);
-        }
+        self.with_unlock(|mut regs| field!(regs, wdog_load).write(load_value));
     }
 
-    fn unlock(&mut self) -> WatchdogUnlockGuard<R> {
-        WatchdogUnlockGuard::new(&mut self.regs)
+    fn with_unlock<F>(&mut self, f: F)
+    where
+        F: FnOnce(&mut UniqueMmioPointer<SP805Registers>),
+    {
+        field!(self.regs, wdog_lock).write(Self::UNLOCK);
+        f(&mut self.regs);
+        field!(self.regs, wdog_lock).write(Self::LOCK);
     }
 }
