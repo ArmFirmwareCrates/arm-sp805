@@ -1,17 +1,19 @@
 // SPDX-FileCopyrightText: Copyright 2023-2025 Arm Limited and/or its affiliates <open-source-office@arm.com>
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+#![no_std]
+#![doc = include_str!("../README.md")]
+#![deny(clippy::undocumented_unsafe_blocks)]
+
 //! Arm Watchdog Module (SP805) driver
 //!
 //! Driver implementation for the [SP805 watchdog module](https://developer.arm.com/documentation/ddi0270/latest/).
 
-#![no_std]
-
+pub use safe_mmio::UniqueMmioPointer;
 use bitflags::bitflags;
 use safe_mmio::{
     field,
     fields::{ReadPure, ReadPureWrite, WriteOnly},
-    UniqueMmioPointer,
 };
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
 
@@ -41,7 +43,7 @@ bitflags! {
     }
 }
 
-/// SP805 register map.
+/// SP805 Watchdog register map.
 #[derive(Clone, Eq, FromBytes, Immutable, IntoBytes, KnownLayout, PartialEq)]
 #[repr(C, align(4))]
 pub struct SP805Registers {
