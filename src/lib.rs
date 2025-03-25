@@ -1,17 +1,15 @@
 // SPDX-FileCopyrightText: Copyright 2023-2025 Arm Limited and/or its affiliates <open-source-office@arm.com>
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Arm Watchdog Module (SP805) driver
-//!
-//! Driver implementation for the [SP805 watchdog module](https://developer.arm.com/documentation/ddi0270/latest/).
-
 #![no_std]
+#![doc = include_str!("../README.md")]
+#![deny(clippy::undocumented_unsafe_blocks)]
 
 use bitflags::bitflags;
+pub use safe_mmio::UniqueMmioPointer;
 use safe_mmio::{
     field,
     fields::{ReadPure, ReadPureWrite, WriteOnly},
-    UniqueMmioPointer,
 };
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
 
@@ -41,7 +39,7 @@ bitflags! {
     }
 }
 
-/// SP805 register map.
+/// SP805 Watchdog register map.
 #[derive(Clone, Eq, FromBytes, Immutable, IntoBytes, KnownLayout, PartialEq)]
 #[repr(C, align(4))]
 pub struct SP805Registers {
@@ -109,16 +107,13 @@ impl<'a> Watchdog<'a> {
         self.with_unlock(|mut regs| {
             field!(regs, wdog_load).write(load_value);
             field!(regs, wdog_intclr).write(1);
-            field!(regs, wdog_control)
-                .write(ControlRegister::INTEN | ControlRegister::RESEN);
+            field!(regs, wdog_control).write(ControlRegister::INTEN | ControlRegister::RESEN);
         });
     }
 
     /// Disable watchdog
     pub fn disable(&mut self) {
-        self.with_unlock(|mut regs| {
-            field!(regs, wdog_control).write(ControlRegister::empty())
-        });
+        self.with_unlock(|mut regs| field!(regs, wdog_control).write(ControlRegister::empty()));
     }
 
     /// Update watchdog
@@ -143,7 +138,7 @@ mod tests {
     use super::*;
     use zerocopy::transmute_mut;
 
-    const LOAD_VALUE : u32 = 0xabcd_ef01;
+    const LOAD_VALUE: u32 = 0xabcd_ef01;
 
     #[repr(align(4096))]
     pub struct FakeSp805Registers {
@@ -183,7 +178,7 @@ mod tests {
 
     #[test]
     fn enable() {
-          let mut regs = FakeSp805Registers::new();
+        let mut regs = FakeSp805Registers::new();
 
         {
             // Enable
