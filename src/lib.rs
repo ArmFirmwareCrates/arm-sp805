@@ -15,10 +15,12 @@ use safe_mmio::{
 };
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
 
+/// Control Register
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug, Eq, FromBytes, Immutable, IntoBytes, KnownLayout, PartialEq)]
 struct ControlRegister(u32);
 
+/// Interrupt register.
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug, Eq, FromBytes, Immutable, IntoBytes, KnownLayout, PartialEq)]
 struct Interrupts(u32);
@@ -39,7 +41,7 @@ bitflags! {
     }
 }
 
-/// SP805 register map
+/// SP805 register map.
 #[derive(Clone, Eq, FromBytes, Immutable, IntoBytes, KnownLayout, PartialEq)]
 #[repr(C, align(4))]
 pub struct SP805Registers {
@@ -85,7 +87,7 @@ pub struct SP805Registers {
     wdog_pcell_id3: ReadPure<u32>,
 }
 
-/// SP805 Watchdog implementation
+/// SP805 Watchdog driver implementation.
 pub struct Watchdog<'a> {
     regs: UniqueMmioPointer<'a, SP805Registers>,
     load_value: u32,
@@ -133,5 +135,88 @@ impl<'a> Watchdog<'a> {
         field!(self.regs, wdog_lock).write(Self::UNLOCK);
         f(&mut self.regs);
         field!(self.regs, wdog_lock).write(Self::LOCK);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use zerocopy::transmute_mut;
+
+    const LOAD_VALUE : u32 = 0xabcd_ef01;
+
+    #[repr(align(4096))]
+    pub struct FakeSp805Registers {
+        regs: [u32; 1024],
+    }
+
+    impl FakeSp805Registers {
+        pub fn new() -> Self {
+            Self { regs: [0u32; 1024] }
+        }
+
+        pub fn clear(&mut self) {
+            self.regs.fill(0);
+        }
+
+        pub fn reg_write(&mut self, offset: usize, value: u32) {
+            self.regs[offset / 4] = value;
+        }
+
+        pub fn reg_read(&self, offset: usize) -> u32 {
+            self.regs[offset / 4]
+        }
+
+        fn get(&mut self) -> UniqueMmioPointer<SP805Registers> {
+            UniqueMmioPointer::from(transmute_mut!(&mut self.regs))
+        }
+
+        pub fn system_for_test(&mut self) -> Watchdog {
+            Watchdog::new(self.get(), LOAD_VALUE)
+        }
+    }
+
+    #[test]
+    fn register_block_size() {
+        assert_eq!(0x1000, core::mem::size_of::<SP805Registers>());
+    }
+
+    #[test]
+    fn enable() {
+          let mut regs = FakeSp805Registers::new();
+
+        {
+            // Enable
+            regs.reg_write(0x0c, 0xffff_ffff);
+            let mut wdt = regs.system_for_test();
+            wdt.enable();
+        }
+
+        assert_eq!(LOAD_VALUE, regs.reg_read(0x00));
+        assert_eq!(0x0000_0003, regs.reg_read(0x08));
+        assert!(regs.reg_read(0x0c) != 0);
+        assert_eq!(Watchdog::LOCK, regs.reg_read(0xc00));
+
+        regs.clear();
+
+        {
+            // Disable
+            regs.reg_write(0x08, 0x0000_0003);
+            let mut wdt = regs.system_for_test();
+            wdt.disable();
+        }
+
+        assert_eq!(0x0000_0000, regs.reg_read(0x08));
+        assert_eq!(Watchdog::LOCK, regs.reg_read(0xc00));
+
+        regs.clear();
+
+        {
+            // Update
+            let mut wdt = regs.system_for_test();
+            wdt.update();
+        }
+
+        assert_eq!(LOAD_VALUE, regs.reg_read(0x00));
     }
 }
