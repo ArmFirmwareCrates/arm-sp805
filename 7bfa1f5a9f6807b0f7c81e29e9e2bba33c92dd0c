@@ -51,6 +51,24 @@
       "message": "```\n*Arm is a registered trademark of Arm Limited (or its subsidiaries or affiliates).*\n```",
       "revId": "7bfa1f5a9f6807b0f7c81e29e9e2bba33c92dd0c",
       "serverId": "8f6f209b-db1a-4cbf-aa44-c8bc30e9bfda"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a6056a59_5ba41b6c",
+        "filename": "README.md",
+        "patchSetId": 2
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1000159
+      },
+      "writtenOn": "2025-04-01T11:57:37Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "dad88bbe_f31031fd",
+      "revId": "7bfa1f5a9f6807b0f7c81e29e9e2bba33c92dd0c",
+      "serverId": "8f6f209b-db1a-4cbf-aa44-c8bc30e9bfda"
     }
   ]
 }
