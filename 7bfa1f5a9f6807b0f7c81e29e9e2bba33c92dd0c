@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "0e434071_0f70f556",
+        "filename": "Cargo.toml",
+        "patchSetId": 2
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1000160
+      },
+      "writtenOn": "2025-04-01T11:43:58Z",
+      "side": 1,
+      "message": "Please remove this line",
+      "revId": "7bfa1f5a9f6807b0f7c81e29e9e2bba33c92dd0c",
+      "serverId": "8f6f209b-db1a-4cbf-aa44-c8bc30e9bfda"
+    }
+  ]
+}
