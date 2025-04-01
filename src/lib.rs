@@ -5,6 +5,29 @@
 #![doc = include_str!("../README.md")]
 #![deny(clippy::undocumented_unsafe_blocks)]
 
+//! ## Example
+//! ```rust
+//! use arm_sp805::{SP805Registers, Watchdog, UniqueMmioPointer};
+//! use core::ptr::NonNull;
+//! # use zerocopy::transmute_mut;
+//! # let mut fake_registers = [0u32; 1024];
+//! # let WATCHDOG_ADDRESS : *mut SP805Registers = transmute_mut!(&mut fake_registers);
+//! # fn handler() {}
+//!
+//! // SAFETY: `WATCHDOG_ADDRESS` is the base address of a SP805 watchdog register block. It remains
+//! // valid for the lifetime of the application and nothing else references this address range.
+//! let watchdog_pointer = unsafe { UniqueMmioPointer::new(NonNull::new(WATCHDOG_ADDRESS).unwrap()) };
+//!
+//! let mut watchdog = Watchdog::new(watchdog_pointer, 0x0001_0000);
+//! watchdog.enable();
+//!
+//! loop {
+//!   handler();
+//!   watchdog.update();
+//!   # break
+//! }
+//! ```
+
 use bitflags::bitflags;
 pub use safe_mmio::UniqueMmioPointer;
 use safe_mmio::{
