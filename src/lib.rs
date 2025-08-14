@@ -185,11 +185,11 @@ mod tests {
             self.regs[offset / 4]
         }
 
-        fn get(&mut self) -> UniqueMmioPointer<SP805Registers> {
+        fn get(&mut self) -> UniqueMmioPointer<'_, SP805Registers> {
             UniqueMmioPointer::from(transmute_mut!(&mut self.regs))
         }
 
-        pub fn system_for_test(&mut self) -> Watchdog {
+        pub fn system_for_test(&mut self) -> Watchdog<'_> {
             Watchdog::new(self.get(), LOAD_VALUE)
         }
     }
